@@ -1,20 +1,39 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
-const axios = require('axios');
+const fs = require('fs');
+
+const configPath = './config.json'; 
+let config = { sessionID: "" };
+
+// Load existing session ID (if available)
+if (fs.existsSync(configPath)) {
+    config = JSON.parse(fs.readFileSync(configPath));
+}
 
 const client = new Client({
     authStrategy: new LocalAuth()
 });
 
+// QR Code handling for login
 client.on('qr', qr => {
     qrcode.generate(qr, { small: true });
-    console.log("Scan this QR code in WhatsApp Web to connect.");
+    console.log("Scan this QR code to connect.");
+});
+
+// Authentication process: Save session ID
+client.on('authenticated', session => {
+    console.log("Authenticated!");
+    
+    config.sessionID = session; // Store session ID
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log("Session ID saved in config.json.");
 });
 
 client.on('ready', () => {
     console.log("Bot is ready!");
 });
 
+// Handling commands
 client.on('message', async msg => {
     const text = msg.body.toLowerCase();
 
